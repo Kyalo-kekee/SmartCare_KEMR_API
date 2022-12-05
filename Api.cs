@@ -2,11 +2,13 @@
 using DataAccessLayer.MessageTypes.Common;
 using DataAccessLayer.MessageTypes;
 using Hangfire;
+using Microsoft.Extensions.Options;
+
 namespace SmartCare;
 
 public static class Api
 {
-
+    
   
     public static void ConfigureApi(this WebApplication app )
     {
@@ -14,13 +16,16 @@ public static class Api
 
     }
     
-    private static IResult ProcessRequest(AbstractPatientMessage patient, IProcessMessage repository)
+    private static IResult ProcessRequest(
+        AbstractPatientMessage patient,
+        IProcessMessage repository,
+        IOptions<AppSettingsMessageTypes> config)
     {
-        MESSAGEHEADER msgHeader = patient.MESSAGE_HEADER;
+        MESSAGEHEADER? msgHeader = patient.MESSAGE_HEADER;
         msgHeader = msgHeader ?? throw new ArgumentNullException(nameof(msgHeader));
 
         
-        if (msgHeader.MESSAGE_TYPE == "ADT^A04")
+        if (msgHeader.MESSAGE_TYPE == config.Value.PatientRegistration)
         {
             var jobId = BackgroundJob.Schedule(() => repository.RegisterPatient(patient),
                 TimeSpan.FromSeconds(3));
